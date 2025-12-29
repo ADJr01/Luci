@@ -1,19 +1,24 @@
 import datetime
-import time
+
 
 
 class QueryMeta:
 
     def __init__(self):
+        self._query_sentiment:str
         self._query_time:datetime.datetime=datetime.datetime.now()
-        self._response_sources:list[str]=None
-        self._response_toolset:list[str]=None
-        self._response_model:str=None
-        self._query_sentiment:str=None
-        self._response_sentiment:str=None
+        self._response_sources:list[str]=[]
+        self._response_toolset:list[str]=[]
+        self._response_model:str
+        self._response_sentiment:str
+        self._chat_index:int=0
 
     def set_query_time(self,query_time:datetime.datetime):
         self._query_time = query_time
+        return self
+
+    def set_chat_index(self,chat_index:int):
+        self._chat_index = chat_index
         return self
 
     def add_response_source(self,response_source:str):
@@ -46,15 +51,38 @@ class QueryMeta:
             response_toolset: [{", ".join(self._response_toolset)}]\n
             query_sentiment: {self._query_sentiment}\n
             response_sentiment: {self._response_sentiment}\n
-            
-            
         """
 
 
 class Record:
 
-
     def __init__(self):
         self._query:str=''
         self._answer:str=''
-        self._meta:QueryMeta=None
+        self._meta:QueryMeta = QueryMeta()
+
+    def set_query(self,query:str):
+        self._query = query
+        return self
+
+    def set_answer(self,answer:str):
+        self._answer = answer
+        return self
+
+    def get_meta(self):
+        return self._meta
+
+    def set_meta(self,meta:QueryMeta):
+        self._meta = meta
+        return self
+
+    def __str__(self):
+        return f"""
+            meta: {self._meta}
+            query: {self._query}
+            answer: {self._answer}
+        """
+
+    def to_Doc(self):
+        # will return langchain Document Object
+        pass
