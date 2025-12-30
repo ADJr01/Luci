@@ -1,5 +1,5 @@
 import datetime
-
+from langchain_core.documents import Document
 
 
 class QueryMeta:
@@ -9,9 +9,14 @@ class QueryMeta:
         self._response_sources:list[str]=[]
         self._response_toolset:list[str]=[]
         self._query_sentiment: str=""
-        self._response_model:str=""
         self._response_sentiment:str=""
+        self._response_model:str=""
         self._chat_index:int=0
+        self._chat_id:str=""
+
+    def set_chat_id(self,chat_id:str):
+        self._chat_id = chat_id
+        return self
 
     def set_query_time(self,query_time:datetime.datetime):
         self._query_time = query_time
@@ -36,6 +41,9 @@ class QueryMeta:
         self._response_model=response_model
         return self
 
+    def set_query_sentiment(self,query_sentiment:str):
+        self._query_sentiment=query_sentiment
+        return self
 
     def set_response_sentiment(self,response_sentiment:str):
         self._response_sentiment=response_sentiment
@@ -49,6 +57,18 @@ class QueryMeta:
             query_sentiment: {self._query_sentiment}\n
             response_sentiment: {self._response_sentiment}\n
         """
+
+    def as_meta(self):
+        return {
+            "chat_id":self._chat_id,
+            "response_time":self._query_time,
+            "response_source":self._response_sources,
+            "response_toolset":", ".join(self._response_toolset),
+            "query_sentiment":self._query_sentiment,
+            "response_sentiment":self._response_sentiment,
+            "response_model":self._response_model,
+            "response_sources":", ".join(self._response_sources),
+        }
 
 
 class Record:
@@ -73,13 +93,15 @@ class Record:
         self._meta = meta
         return self
 
-    def __str__(self):
+    def __str__(self)->str:
         return f"""
             meta: {self._meta}
             query: {self._query}
             answer: {self._answer}
         """
 
-    def to_Doc(self):
-        # will return langchain Document Object
-        pass
+    def to_doc(self)->Document:
+        return Document(
+            page_content=f"""Query: \"{self._query}\" Answer: \"{self._answer}\"""",
+            metadata=self._meta.as_meta()
+        )
