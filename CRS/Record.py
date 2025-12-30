@@ -61,6 +61,7 @@ class QueryMeta:
     def as_meta(self):
         return {
             "chat_id":self._chat_id,
+            "chat_index":self._chat_index,
             "response_time":self._query_time,
             "response_source":self._response_sources,
             "response_toolset":", ".join(self._response_toolset),
@@ -103,5 +104,5 @@ class Record:
     def to_doc(self)->Document:
         return Document(
             page_content=f"""Query: \"{self._query}\" Answer: \"{self._answer}\"""",
-            metadata=self._meta.as_meta()
+            metadata={**self._meta.as_meta(),"query":self._query},
         )
