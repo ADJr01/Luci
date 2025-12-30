@@ -103,6 +103,6 @@ class Record:
 
     def to_doc(self)->Document:
         return Document(
-            page_content=f"""Query: \"{self._query}\" Answer: \"{self._answer}\"""",
+            page_content=f"{self._answer}",
             metadata={**self._meta.as_meta(),"query":self._query},
         )
