@@ -5,12 +5,12 @@ import datetime
 class QueryMeta:
 
     def __init__(self):
-        self._query_sentiment:str
         self._query_time:datetime.datetime=datetime.datetime.now()
         self._response_sources:list[str]=[]
         self._response_toolset:list[str]=[]
-        self._response_model:str
-        self._response_sentiment:str
+        self._query_sentiment: str=""
+        self._response_model:str=""
+        self._response_sentiment:str=""
         self._chat_index:int=0
 
     def set_query_time(self,query_time:datetime.datetime):
@@ -36,9 +36,6 @@ class QueryMeta:
         self._response_model=response_model
         return self
 
-    def set_query_sentiment(self,query_sentiment:str):
-        self._query_sentiment=query_sentiment
-        return self
 
     def set_response_sentiment(self,response_sentiment:str):
         self._response_sentiment=response_sentiment
