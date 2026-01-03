@@ -7,8 +7,8 @@ from datetime import datetime
 from mem0 import Memory
 class EnhancedMemory:
     """
-    Enhanced Memory wrapper with authentication and advanced querying capabilities.
-    """
+        Enhanced Memory wrapper with authentication and advanced querying capabilities.
+        """
 
     def __init__(
             self,
@@ -128,7 +128,7 @@ class EnhancedMemory:
             query: str,
             limit: int = 5,
             user_id: Optional[str] = None
-    ):
+    ) -> List[Dict]:
         """
         Search memories with automatic user isolation.
 

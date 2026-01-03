@@ -6,6 +6,10 @@ from typing import Any, Optional, Dict, List, Union
 from datetime import datetime
 from mem0 import Memory
 
+from OllamaMem.Memory import EnhancedMemory
+
+DEFAULT_PERSIST_DIR='./mem_store/'
+
 
 class OllamaMemoryBuilder:
     """
@@ -19,30 +23,23 @@ class OllamaMemoryBuilder:
         """Initialize builder with default values."""
         # Required parameters
         self._collection_name: Optional[str] = None
-        self._persist_dir: Optional[str] = None
+        self._persist_dir: Optional[str] = DEFAULT_PERSIST_DIR
         self._ollama_model: Optional[str] = None
         self._embedding_model: Optional[str] = None
-        self._re_ranking_model: Optional[str] = None
 
         # Optional parameters with defaults
-        self._re_rank_top_k: int = 15
         self._max_tokens: int = 3000
         self._temperature: float = 0.0
-        self._use_cuda: bool = False
-        self._allow_reset: bool = False
         self._distance_metric: str = "cosine"
         self._ollama_base_url: str = "http://localhost:11434/"
         self.mem_version: float = 0.1
 
-        # Advanced configuration options
+        # Optional: embedding dimensions (usually auto-detected)
+        self._embedding_dims: Optional[int] = None
+
+        # Application-layer features (not passed to mem0)
         self._retrieval_top_k: int = 5
         self._min_relevance_score: float = 0.7
-        self._context_window_tokens: int = 2000
-        self._max_age_days: int = 120
-        self._max_size_mb: int = 2048
-        self._reranker_timeout: int = 10
-        self._hnsw_m: int = 32
-        self._hnsw_ef_construction: int = 200
 
         # Authentication
         self._enable_auth: bool = False
@@ -74,14 +71,9 @@ class OllamaMemoryBuilder:
         self._embedding_model = model
         return self
 
-    def re_ranking_model(self, model: str):
-        """Set the re-ranking model."""
-        self._re_ranking_model = model
-        return self
-
-    def re_rank_top_k(self, k: int):
-        """Set the number of top results to re-rank."""
-        self._re_rank_top_k = k
+    def embedding_dims(self, dims: int):
+        """Set the embedding dimensions (optional, usually auto-detected)."""
+        self._embedding_dims = dims
         return self
 
     def max_tokens(self, tokens: int):
@@ -92,16 +84,6 @@ class OllamaMemoryBuilder:
     def temperature(self, temp: float):
         """Set the temperature for LLM generation."""
         self._temperature = temp
-        return self
-
-    def use_cuda(self, enabled: bool = True):
-        """Enable or disable CUDA for re-ranking."""
-        self._use_cuda = enabled
-        return self
-
-    def allow_reset(self, enabled: bool = True):
-        """Allow or disallow resetting the vector store."""
-        self._allow_reset = enabled
         return self
 
     def distance_metric(self, metric: str):
@@ -124,36 +106,6 @@ class OllamaMemoryBuilder:
         self._min_relevance_score = score
         return self
 
-    def context_window_tokens(self, tokens: int):
-        """Set the context window token limit."""
-        self._context_window_tokens = tokens
-        return self
-
-    def cleanup_max_age_days(self, days: int):
-        """Set the maximum age in days for cleanup policy."""
-        self._max_age_days = days
-        return self
-
-    def cleanup_max_size_mb(self, size_mb: int):
-        """Set the maximum size in MB for cleanup policy."""
-        self._max_size_mb = size_mb
-        return self
-
-    def reranker_timeout(self, seconds: int):
-        """Set the reranker timeout in seconds."""
-        self._reranker_timeout = seconds
-        return self
-
-    def hnsw_m(self, m: int):
-        """Set the HNSW M parameter."""
-        self._hnsw_m = m
-        return self
-
-    def hnsw_ef_construction(self, ef: int):
-        """Set the HNSW ef_construction parameter."""
-        self._hnsw_ef_construction = ef
-        return self
-
     def enable_authentication(self, auth_key: str):
         """
         Enable user-based authentication and data isolation.
@@ -173,8 +125,7 @@ class OllamaMemoryBuilder:
             'collection_name': self._collection_name,
             'persist_dir': self._persist_dir,
             'ollama_model': self._ollama_model,
-            'embedding_model': self._embedding_model,
-            're_ranking_model': self._re_ranking_model
+            'embedding_model': self._embedding_model
         }
 
         missing = [name for name, value in required.items() if value is None]
@@ -302,25 +253,21 @@ class OllamaMemoryBuilder:
         """
         self._validate()
 
+        # Build FAISS config with only supported fields
+        faiss_config = {
+            "collection_name": self._collection_name,
+            "path": self._persist_dir,
+            "distance_strategy": self._distance_metric
+        }
+
+        # Add optional embedding dimensions if specified
+        if self._embedding_dims:
+            faiss_config["embedding_model_dims"] = self._embedding_dims
+
         mem_conf = {
             "vector_store": {
                 "provider": "faiss",
-                "config": {
-                    "collection_name": self._collection_name,
-                    "path": self._persist_dir,
-                    "distance_strategy": self._distance_metric,
-                    "index_type": "HNSW",
-                    "index_params": {
-                        "M": self._hnsw_m,
-                        "ef_construction": self._hnsw_ef_construction
-                    },
-                    "enable_metadata_filter": True,
-                    "allow_reset": self._allow_reset,
-                    "cleanup_policy": {
-                        "max_age_days": self._max_age_days,
-                        "max_size_mb": self._max_size_mb
-                    }
-                }
+                "config": faiss_config
             },
             "llm": {
                 "provider": "ollama",
@@ -335,34 +282,20 @@ class OllamaMemoryBuilder:
                 "provider": "ollama",
                 "config": {
                     "model": self._embedding_model,
-                    "ollama_base_url": self._ollama_base_url,
-                    "normalize_embeddings": True
+                    "ollama_base_url": self._ollama_base_url
                 }
-            },
-            "reranker": {
-                "provider": "ollama",
-                "config": {
-                    "model": self._re_ranking_model,
-                    "top_k": self._re_rank_top_k,
-                    "ollama_base_url": self._ollama_base_url,
-                    "fallback_enabled": True,
-                    "timeout_seconds": self._reranker_timeout
-                }
-            },
-            "retrieval": {
-                "top_k": self._retrieval_top_k,
-                "min_relevance_score": self._min_relevance_score,
-                "context_window_tokens": self._context_window_tokens
-            },
-            "version": f"version_{self.mem_version}"
+            }
         }
 
-        if self._use_cuda:
-            mem_conf['reranker']['device'] = 'cuda'
+        # Add version metadata
+        mem_conf["version"] = f"v{self.mem_version}"
+
+        # Note: Reranking, advanced HNSW params, and cleanup policies are handled
+        # at the application layer in EnhancedMemory, not in mem0 config
 
         return mem_conf
 
-    def build(self, verbose: bool = True):
+    def build(self, verbose: bool = True) -> 'EnhancedMemory':
         """
         Build and return an EnhancedMemory instance.
         Automatically detects existing persistence and loads or creates new instance.
@@ -402,4 +335,5 @@ class OllamaMemoryBuilder:
         )
 
         return enhanced_memory
+
 
