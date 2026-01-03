@@ -1,4 +1,4 @@
-
+from OllamaMem import Memory, OllamaMemoryBuilder as OLM
 
 if __name__ == '__main__':
-    print("Hello")
+    mem_conf = OLM.OllamaMemoryBuilder().ollama_model()
