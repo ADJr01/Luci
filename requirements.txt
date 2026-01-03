@@ -1,2 +1,3 @@
 mem0ai
 ollama
+faiss-cpu
