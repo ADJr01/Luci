@@ -119,7 +119,7 @@ class EnhancedMemory:
         # Add timestamp and user metadata
         full_metadata = self._get_user_metadata(metadata)
         full_metadata["timestamp"] = datetime.now().isoformat()
-
+        print(full_metadata)
         result = self.memory.add(text, metadata=full_metadata)
         self.save()
 
