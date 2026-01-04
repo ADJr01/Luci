@@ -8,14 +8,14 @@ from mem0 import Memory
 
 from OllamaMem.Memory import EnhancedMemory
 
-DEFAULT_PERSIST_DIR='./mem_store/'
+DEFAULT_PERSIST_DIR='./store/'
 
 
 class OllamaMemoryBuilder:
     """
     Enhanced builder class for creating Ollama-based Memory instances with:
     - Automatic persistence detection and loading
-    - User-based authentication and data isolation
+    - User session management for data isolation
     - Advanced querying with metadata filtering and custom prompts
     """
 
@@ -41,13 +41,13 @@ class OllamaMemoryBuilder:
         self._retrieval_top_k: int = 5
         self._min_relevance_score: float = 0.7
 
-        # Authentication
-        self._enable_auth: bool = False
-        self._auth_key: Optional[str] = None
+        # Optional re-ranking (for future implementation)
+        self._re_ranking_model: Optional[str] = None
+        self._re_rank_top_k: int = 15
+        self._enable_reranking: bool = False
 
         # Memory instance
         self._memory: Optional[Memory] = None
-        self._current_user: Optional[str] = None
 
     # ==================== Builder Methods ====================
 
@@ -74,6 +74,20 @@ class OllamaMemoryBuilder:
     def embedding_dims(self, dims: int):
         """Set the embedding dimensions (optional, usually auto-detected)."""
         self._embedding_dims = dims
+        return self
+
+    def re_ranking_model(self, model: str, top_k: int = 15):
+        """
+        Set the re-ranking model (optional - for future implementation).
+        Note: Re-ranking is not currently supported by mem0 with Ollama.
+
+        Args:
+            model: Re-ranking model name
+            top_k: Number of results to re-rank
+        """
+        self._re_ranking_model = model
+        self._re_rank_top_k = top_k
+        self._enable_reranking = True
         return self
 
     def max_tokens(self, tokens: int):
@@ -104,17 +118,6 @@ class OllamaMemoryBuilder:
     def min_relevance_score(self, score: float):
         """Set the minimum relevance score threshold."""
         self._min_relevance_score = score
-        return self
-
-    def enable_authentication(self, auth_key: str):
-        """
-        Enable user-based authentication and data isolation.
-
-        Args:
-            auth_key: Secret key for generating user tokens
-        """
-        self._enable_auth = True
-        self._auth_key = auth_key
         return self
 
     # ==================== Validation & Persistence ====================
@@ -152,9 +155,8 @@ class OllamaMemoryBuilder:
 
         # Check for FAISS index file
         index_file = persist_path / f"{self._collection_name}.index"
-        metadata_file = persist_path / f"{self._collection_name}_metadata.json"
 
-        return index_file.exists() and metadata_file.exists()
+        return index_file.exists()
 
     def _create_persist_directory(self) -> None:
         """Create persistence directory if it doesn't exist."""
@@ -175,69 +177,6 @@ class OllamaMemoryBuilder:
             "path": str(index_file),
             "modified": datetime.fromtimestamp(index_file.stat().st_mtime).isoformat()
         }
-
-    # ==================== Authentication ====================
-
-    def _generate_user_token(self, user_id: str) -> str:
-        """
-        Generate a secure token for user authentication.
-
-        Args:
-            user_id: User identifier
-
-        Returns:
-            Hashed token for the user
-        """
-        if not self._auth_key:
-            raise ValueError("Authentication key not set. Call enable_authentication() first.")
-
-        combined = f"{user_id}:{self._auth_key}"
-        return hashlib.sha256(combined.encode()).hexdigest()
-
-    def _validate_user_token(self, user_id: str, token: str) -> bool:
-        """
-        Validate a user token.
-
-        Args:
-            user_id: User identifier
-            token: Token to validate
-
-        Returns:
-            True if token is valid, False otherwise
-        """
-        expected_token = self._generate_user_token(user_id)
-        return token == expected_token
-
-    def authenticate_user(self, user_id: str) -> str:
-        """
-        Authenticate a user and return their access token.
-
-        Args:
-            user_id: User identifier (e.g., "alice", "bob")
-
-        Returns:
-            Access token for the user
-
-        Raises:
-            ValueError: If authentication is not enabled
-        """
-        if not self._enable_auth:
-            raise ValueError("Authentication not enabled. Call enable_authentication() first.")
-
-        self._current_user = user_id
-        return self._generate_user_token(user_id)
-
-    def _get_user_metadata_filter(self, user_id: str) -> Dict[str, str]:
-        """
-        Get metadata filter for user isolation.
-
-        Args:
-            user_id: User identifier
-
-        Returns:
-            Metadata filter dictionary
-        """
-        return {"user_id": user_id}
 
     # ==================== Build Methods ====================
 
@@ -290,8 +229,8 @@ class OllamaMemoryBuilder:
         # Add version metadata
         mem_conf["version"] = f"v{self.mem_version}"
 
-        # Note: Reranking, advanced HNSW params, and cleanup policies are handled
-        # at the application layer in EnhancedMemory, not in mem0 config
+        # Note: Re-ranking configuration stored for future implementation
+        # Not added to mem_conf as it's not supported by mem0 with Ollama yet
 
         return mem_conf
 
@@ -328,12 +267,16 @@ class OllamaMemoryBuilder:
         # Wrap in EnhancedMemory for additional features
         enhanced_memory = EnhancedMemory(
             memory=memory,
-            enable_auth=self._enable_auth,
-            auth_key=self._auth_key,
             persist_dir=self._persist_dir,
-            collection_name=self._collection_name
+            collection_name=self._collection_name,
+            re_ranking_model=self._re_ranking_model,
+            re_rank_top_k=self._re_rank_top_k,
+            enable_reranking=self._enable_reranking
         )
 
         return enhanced_memory
+
+
+
 
 

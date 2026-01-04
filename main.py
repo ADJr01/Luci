@@ -13,8 +13,11 @@ if __name__ == '__main__':
               .max_tokens(3000)
               .temperature(0.1314)
               .build())
-    rahat_token = hashlib.sha256("rahat.adnan:my-secret-key".encode()).hexdigest()
-    mem.set_user("rahat.adnan", rahat_token)
-    mem.add("I am Rahat Adnan.I am 29 years Old.I live in Dhaka Cantonment")
+
+    mem.set_user_session("rahat.adnan")
+    mem.add("I love teal color.",metadata={"feeling":"love","thing":"color"})
+    mem.add("I hate Sun",metadata={"feeling":"hate","thing":"sun"})
+    res = mem.search("thing i love")
+    print(res)
 
 

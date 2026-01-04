@@ -7,85 +7,135 @@ from datetime import datetime
 from mem0 import Memory
 
 
+class SessionNotSetError(Exception):
+    """Exception raised when attempting operations without an active user session."""
+    pass
+
+
 class EnhancedMemory:
     """
-        Enhanced Memory wrapper with authentication and advanced querying capabilities.
-        """
+    Enhanced Memory wrapper with session management and advanced querying capabilities.
+    """
 
     def __init__(
             self,
             memory: Memory,
-            enable_auth: bool = False,
-            auth_key: Optional[str] = None,
             persist_dir: Optional[str] = None,
-            collection_name: Optional[str] = None
+            collection_name: Optional[str] = None,
+            re_ranking_model: Optional[str] = None,
+            re_rank_top_k: int = 15,
+            enable_reranking: bool = False
     ):
         """
         Initialize EnhancedMemory.
 
         Args:
             memory: Base Memory instance
-            enable_auth: Whether authentication is enabled
-            auth_key: Authentication key for token generation
             persist_dir: Directory for persistence
             collection_name: Collection name
+            re_ranking_model: Re-ranking model (for future use)
+            re_rank_top_k: Number of results to re-rank
+            enable_reranking: Whether re-ranking is enabled
         """
         self.memory = memory
-        self.enable_auth = enable_auth
-        self.auth_key = auth_key
         self.persist_dir = persist_dir
         self.collection_name = collection_name
         self._current_user: Optional[str] = None
+        self._active_sessions: Dict[str, datetime] = {}
 
-    # ==================== Authentication Methods ====================
+        # Re-ranking config (for future implementation)
+        self.re_ranking_model = re_ranking_model
+        self.re_rank_top_k = re_rank_top_k
+        self.enable_reranking = enable_reranking
 
-    def set_user(self, user_id: str, token: Optional[str] = None) -> None:
+    # ==================== Session Management ====================
+
+    def set_user_session(self, user_name: str) -> None:
         """
-        Set the current user for authenticated operations.
+        Start a session for a specific user.
 
         Args:
-            user_id: User identifier
-            token: Authentication token (required if auth is enabled)
+            user_name: User identifier
 
-        Raises:
-            PermissionError: If token is invalid
+        Example:
+            memory.set_user_session("alice")
+            memory.add("Alice's note")
         """
-        if self.enable_auth:
-            if not token:
-                raise PermissionError("Authentication token required")
+        if not user_name or not isinstance(user_name, str):
+            raise ValueError("user_name must be a non-empty string")
 
-            if not self._validate_token(user_id, token):
-                raise PermissionError("Invalid authentication token")
+        self._current_user = user_name
+        self._active_sessions[user_name] = datetime.now()
+        print(f"✓ Session started for user: {user_name}")
 
-        self._current_user = user_id
+    def end_user_session(self, user_name: Optional[str] = None) -> None:
+        """
+        End a session for a specific user.
 
-    def _validate_token(self, user_id: str, token: str) -> bool:
-        """Validate user token."""
-        if not self.auth_key:
-            return False
+        Args:
+            user_name: User identifier (defaults to current user)
 
-        expected = hashlib.sha256(f"{user_id}:{self.auth_key}".encode()).hexdigest()
-        return token == expected
+        Example:
+            memory.end_user_session("alice")
+            # or
+            memory.end_user_session()  # ends current user's session
+        """
+        target_user = user_name if user_name else self._current_user
 
-    def _ensure_user_set(self) -> None:
-        """Ensure a user is set for authenticated operations."""
-        if self.enable_auth and not self._current_user:
-            raise PermissionError("No user authenticated. Call set_user() first.")
+        if not target_user:
+            raise SessionNotSetError(
+                "No active session to end. Use set_user_session() first."
+            )
+
+        if target_user in self._active_sessions:
+            del self._active_sessions[target_user]
+
+        if self._current_user == target_user:
+            self._current_user = None
+
+        print(f"✓ Session ended for user: {target_user}")
+
+    def get_current_user(self) -> Optional[str]:
+        """
+        Get the current active user.
+
+        Returns:
+            Current user name or None
+        """
+        return self._current_user
+
+    def get_active_sessions(self) -> Dict[str, str]:
+        """
+        Get all active sessions.
+
+        Returns:
+            Dictionary of user_name -> session_start_time (ISO format)
+        """
+        return {
+            user: start_time.isoformat()
+            for user, start_time in self._active_sessions.items()
+        }
+
+    def _ensure_session_active(self) -> None:
+        """Ensure a user session is active before operations."""
+        if not self._current_user:
+            raise SessionNotSetError(
+                "No active user session. Call set_user_session(user_name) before performing operations."
+            )
 
     def _get_user_metadata(self, additional_metadata: Optional[Dict] = None) -> Dict:
         """
-        Get metadata with user isolation.
+        Get metadata without user_id (since mem0 handles it separately).
 
         Args:
             additional_metadata: Additional metadata to merge
 
         Returns:
-            Metadata dictionary with user_id
+            Metadata dictionary
         """
-        metadata = {}
+        self._ensure_session_active()
 
-        if self.enable_auth and self._current_user:
-            metadata["user_id"] = self._current_user
+        metadata = {}
 
         if additional_metadata:
             metadata.update(additional_metadata)
@@ -106,21 +156,31 @@ class EnhancedMemory:
         Args:
             text: Text content to store
             metadata: Additional metadata
-            user_id: Override current user (requires proper authentication)
+            user_id: Override current user (for admin operations)
 
         Returns:
             Result from memory.add()
+
+        Raises:
+            SessionNotSetError: If no user session is active
         """
-        if user_id and user_id != self._current_user:
-            raise PermissionError("Cannot add memories for other users")
+        if user_id:
+            # Temporarily override user for this operation
+            original_user = self._current_user
+            self._current_user = user_id
+            try:
+                return self.add(text, metadata)
+            finally:
+                self._current_user = original_user
 
-        self._ensure_user_set()
+        self._ensure_session_active()
 
-        # Add timestamp and user metadata
-        full_metadata = self._get_user_metadata(metadata)
+        # Prepare metadata (without user_id, as it's a separate parameter)
+        full_metadata = metadata.copy() if metadata else {}
         full_metadata["timestamp"] = datetime.now().isoformat()
-        print(full_metadata)
-        result = self.memory.add(text, metadata=full_metadata)
+
+        # Pass user_id as a separate parameter to mem0
+        result = self.memory.add(text, user_id=self._current_user, metadata=full_metadata)
         self.save()
 
         return result
@@ -137,20 +197,68 @@ class EnhancedMemory:
         Args:
             query: Search query
             limit: Maximum number of results
-            user_id: Override current user (for admin access)
+            user_id: Override current user (for cross-user search if needed)
 
         Returns:
             List of search results
+
+        Raises:
+            SessionNotSetError: If no user session is active
         """
-        self._ensure_user_set()
+        if user_id:
+            # Temporarily override user for this operation
+            original_user = self._current_user
+            self._current_user = user_id
+            try:
+                return self.search(query, limit)
+            finally:
+                self._current_user = original_user
 
-        # Apply user filter if authentication is enabled
-        filters = {}
-        if self.enable_auth:
-            target_user = user_id if user_id else self._current_user
-            filters["user_id"] = target_user
+        self._ensure_session_active()
 
-        return self.memory.search(query, limit=limit, filters=filters)
+        # Pass user_id as parameter to mem0, not in filters
+        try:
+            results = self.memory.search(query, user_id=self._current_user, limit=limit)
+            return results if results else []
+        except Exception as e:
+            print(f"Search error: {e}")
+            return []
+
+    def get_all(
+            self,
+            limit: int = 100,
+            user_id: Optional[str] = None
+    ) -> List[Dict]:
+        """
+        Get all memories for the current user.
+
+        Args:
+            limit: Maximum number of memories to return
+            user_id: Override current user
+
+        Returns:
+            List of all memories
+
+        Raises:
+            SessionNotSetError: If no user session is active
+        """
+        if user_id:
+            original_user = self._current_user
+            self._current_user = user_id
+            try:
+                return self.get_all(limit)
+            finally:
+                self._current_user = original_user
+
+        self._ensure_session_active()
+
+        # Get all memories using user_id parameter
+        try:
+            all_memories = self.memory.get_all(user_id=self._current_user)
+            return all_memories[:limit] if all_memories else []
+        except Exception as e:
+            print(f"Error getting memories: {e}")
+            return []
 
     # ==================== Advanced Query Method ====================
 
@@ -165,7 +273,7 @@ class EnhancedMemory:
             require_all_filters: bool = True,
             sort_by: str = "relevance",
             include_metadata: bool = True,
-            re_rank: bool = True
+            user_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Advanced query with enhanced filtering, custom prompts, and metadata operations.
@@ -180,22 +288,39 @@ class EnhancedMemory:
             max_results: Maximum number of results to return
             custom_prompt: Custom prompt template for LLM processing
                 Variables: {query}, {context}, {filters}
-                Example: "Based on {context}, provide a detailed answer about {query} focusing on {filters}"
+                Example: "Based on {context}, provide a detailed answer about {query}"
             require_all_filters: If True, all filters must match. If False, any filter can match
             sort_by: Sort results by "relevance", "date", or "custom"
             include_metadata: Include full metadata in results
-            re_rank: Apply re-ranking to results
+            user_id: Override current user
 
         Returns:
             Dictionary with:
                 - results: List of matching memories
                 - metadata: Query metadata (filters applied, result count, etc.)
-                - synthesized_answer: LLM-generated answer based on custom prompt (if provided)
-        """
-        self._ensure_user_set()
+                - synthesized_answer: LLM-generated answer (if custom_prompt provided)
 
-        # Build comprehensive filters
-        query_filters = self._get_user_metadata(filters or {})
+        Raises:
+            SessionNotSetError: If no user session is active
+        """
+        if user_id:
+            original_user = self._current_user
+            self._current_user = user_id
+            try:
+                return self.advanced_query(
+                    query, filters, date_range, relevance_threshold,
+                    max_results, custom_prompt, require_all_filters,
+                    sort_by, include_metadata
+                )
+            finally:
+                self._current_user = original_user
+
+        self._ensure_session_active()
+
+        # Build comprehensive filters (without user_id in metadata)
+        query_filters = {}
+        if filters:
+            query_filters.update(filters)
 
         # Add date range filtering
         if date_range:
@@ -206,10 +331,11 @@ class EnhancedMemory:
         initial_limit = max_results * 3 if filters else max_results
 
         try:
+            # Pass user_id as parameter, not in filters
             raw_results = self.memory.search(
                 query,
-                limit=initial_limit,
-                filters=query_filters if require_all_filters else None
+                user_id=self._current_user,
+                limit=initial_limit
             )
         except Exception as e:
             return {
@@ -217,13 +343,14 @@ class EnhancedMemory:
                 "metadata": {
                     "error": str(e),
                     "query": query,
-                    "filters_applied": query_filters
+                    "filters_applied": query_filters,
+                    "user_id": self._current_user
                 }
             }
 
         # Post-process results with advanced filtering
         filtered_results = self._apply_advanced_filters(
-            results=raw_results,
+            results=raw_results or [],
             filters=filters or {},
             date_range=date_range,
             relevance_threshold=relevance_threshold,
@@ -248,7 +375,8 @@ class EnhancedMemory:
                 "total_results": len(final_results),
                 "relevance_threshold": relevance_threshold,
                 "date_range": date_range,
-                "sort_by": sort_by
+                "sort_by": sort_by,
+                "user_id": self._current_user
             }
         }
 
@@ -358,9 +486,11 @@ class EnhancedMemory:
 
         # Use memory's LLM to generate answer
         try:
-            # This is a simplified approach - adjust based on mem0's actual API
-            response = self.memory.chat(formatted_prompt)
-            return response
+            # Generate response using mem0's search with the formatted prompt
+            response = self.memory.search(formatted_prompt, limit=1)
+            if response and len(response) > 0:
+                return response[0].get("text", "No synthesis available")
+            return "Unable to generate synthesis"
         except Exception as e:
             return f"Error generating synthesis: {str(e)}"
 
@@ -369,17 +499,46 @@ class EnhancedMemory:
     def save(self) -> None:
         """Explicitly save memory to disk."""
         try:
-            self.memory.vector_store.save()
+            if hasattr(self.memory, 'vector_store'):
+                self.memory.vector_store.save()
         except Exception as e:
             print(f"Warning: Failed to save memory: {e}")
 
-    def get_stats(self) -> Dict[str, Any]:
+    def reset_index(self) -> None:
+        """
+        Manually reset the FAISS index. Use this if you encounter dimension mismatch errors.
+        WARNING: This will delete all existing memories!
+        """
+        if not self.persist_dir or not self.collection_name:
+            print("No persist directory or collection name set")
+            return
+
+        persist_path = Path(self.persist_dir)
+        if persist_path.exists():
+            index_file = persist_path / f"{self.collection_name}.index"
+            pkl_file = persist_path / f"{self.collection_name}.pkl"
+
+            deleted = []
+            if index_file.exists():
+                index_file.unlink()
+                deleted.append("index")
+            if pkl_file.exists():
+                pkl_file.unlink()
+                deleted.append("pkl")
+
+            if deleted:
+                print(f"✓ Deleted {', '.join(deleted)} files. Please rebuild the memory instance.")
+            else:
+                print("No index files found to delete.")
         """Get statistics about the memory store."""
         stats = {
             "collection_name": self.collection_name,
             "persist_dir": self.persist_dir,
-            "auth_enabled": self.enable_auth,
-            "current_user": self._current_user
+            "current_user": self._current_user,
+            "active_sessions": len(self._active_sessions),
+            "session_users": list(self._active_sessions.keys()),
+            "reranking_enabled": self.enable_reranking,
+            "reranking_model": self.re_ranking_model
         }
 
         if self.persist_dir and self.collection_name:
@@ -392,47 +551,61 @@ class EnhancedMemory:
 
         return stats
 
-    def list_user_memories(
-            self,
-            user_id: Optional[str] = None,
-            limit: int = 100
-    ) -> List[Dict]:
-        """
-        List all memories for a specific user.
-
-        Args:
-            user_id: User ID (defaults to current user)
-            limit: Maximum number of memories to return
-
-        Returns:
-            List of memory dictionaries
-        """
-        target_user = user_id or self._current_user
-
-        if self.enable_auth and target_user != self._current_user:
-            raise PermissionError("Cannot list memories for other users")
-
-        # This would need to be implemented based on mem0's actual API
-        # Placeholder implementation
-        return []
-
     def delete_memory(self, memory_id: str) -> bool:
         """
-        Delete a specific memory (with user permission check).
+        Delete a specific memory (with user session check).
 
         Args:
             memory_id: ID of memory to delete
 
         Returns:
             True if deleted successfully
-        """
-        self._ensure_user_set()
 
-        # Implementation would need mem0's delete API
-        # Should check if memory belongs to current user
+        Raises:
+            SessionNotSetError: If no user session is active
+        """
+        self._ensure_session_active()
+
         try:
             self.memory.delete(memory_id)
             self.save()
             return True
-        except Exception:
+        except Exception as e:
+            print(f"Error deleting memory: {e}")
             return False
+
+    def clear_user_memories(self, user_id: Optional[str] = None) -> int:
+        """
+        Clear all memories for a specific user.
+
+        Args:
+            user_id: User to clear memories for (defaults to current user)
+
+        Returns:
+            Number of memories cleared
+
+        Raises:
+            SessionNotSetError: If no user session is active
+        """
+        target_user = user_id if user_id else self._current_user
+
+        if not target_user:
+            raise SessionNotSetError(
+                "No active user session. Call set_user_session() first."
+            )
+
+        try:
+            # Get all memories for the user
+            all_memories = self.get_all(user_id=target_user)
+            count = 0
+
+            for mem in all_memories:
+                if mem.get("id"):
+                    if self.memory.delete(mem["id"]):
+                        count += 1
+
+            self.save()
+            return count
+        except Exception as e:
+            print(f"Error clearing memories: {e}")
+            return 0
