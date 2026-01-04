@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import Any, Optional, Dict, List, Union
 from datetime import datetime
 from mem0 import Memory
+
+
 class EnhancedMemory:
     """
         Enhanced Memory wrapper with authentication and advanced querying capabilities.
