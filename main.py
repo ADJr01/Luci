@@ -9,6 +9,7 @@ if __name__ == '__main__':
     mem = (OLM.OllamaMemoryBuilder()
               .collection_name("test_collection")
               .persist_dir("./store")
+              .max_tokens(3000)
               .embedding_dims(dims=get_embedding_dim_ollama(EMBEDDING_MODEL))
               .ollama_model(OLLAMA_MODEL)
               .embedding_model(EMBEDDING_MODEL)
