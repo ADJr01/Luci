@@ -1,3 +1,4 @@
 mem0ai
+mem0ai[graph]
 ollama
 faiss-cpu
