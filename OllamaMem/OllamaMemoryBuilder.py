@@ -9,7 +9,9 @@ from mem0 import Memory
 from OllamaMem.Memory import EnhancedMemory
 
 DEFAULT_PERSIST_DIR='./store/'
-
+NEO4j_URL = 'neo4j://127.0.0.1:7687'
+NEO4J_USERNAME="neo4j"
+NEO4J_PASSWORD="12345678"
 
 class OllamaMemoryBuilder:
     """
@@ -207,6 +209,15 @@ class OllamaMemoryBuilder:
             "vector_store": {
                 "provider": "faiss",
                 "config": faiss_config
+            },
+            "graph_store": {
+                "provider": "neo4j",
+                "config": {
+                    "url": NEO4j_URL,
+                    "username": NEO4J_USERNAME,
+                    "password": NEO4J_PASSWORD,
+                    "database": "neo4j",
+                }
             },
             "llm": {
                 "provider": "ollama",

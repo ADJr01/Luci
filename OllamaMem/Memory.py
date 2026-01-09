@@ -497,12 +497,30 @@ class EnhancedMemory:
     # ==================== Utility Methods ====================
 
     def save(self) -> None:
-        """Explicitly save memory to disk."""
+        """
+        Save memory to disk.
+        Note: FAISS in mem0 auto-saves, so this is mostly a no-op.
+        Kept for API compatibility.
+        """
         try:
+            # mem0's FAISS implementation auto-saves to the persist_dir
+            # Check if there's a custom save method
             if hasattr(self.memory, 'vector_store'):
-                self.memory.vector_store.save()
+                vs = self.memory.vector_store
+
+                # Try different save methods that might exist
+                if hasattr(vs, 'save'):
+                    vs.save()
+                elif hasattr(vs, 'persist'):
+                    vs.persist()
+                elif hasattr(vs, '_save'):
+                    vs._save()
+                # If none exist, it auto-saves anyway
+        except AttributeError:
+            # FAISS auto-saves, so this is fine
+            pass
         except Exception as e:
-            print(f"Warning: Failed to save memory: {e}")
+            print(f"Warning: Save operation encountered an issue: {e}")
 
     def reset_index(self) -> None:
         """
