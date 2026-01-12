@@ -1,5 +1,6 @@
-from ollama import embed
-
-def get_embedding_dim_ollama(model:str):
-    result = embed(model=model,input="test query")
-    return len(result['embeddings'][0])
+def read_file(path:str):
+    with open(path,'r') as f:
+        text = ""
+        for line in f:
+            text += str(line)
+        return text

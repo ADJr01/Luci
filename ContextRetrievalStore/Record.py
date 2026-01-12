@@ -51,10 +51,13 @@ class QueryMeta:
 
     def __str__(self):
         return f"""
+            chat_id: {self._chat_id}\n
+            chat_index: {self._chat_index}\n
             response_time: {self._query_time}\n
             response_source: [{", ".join(self._response_sources)}]\n
             response_toolset: [{", ".join(self._response_toolset)}]\n
             query_sentiment: {self._query_sentiment}\n
+            response_model: {self._response_model}\n
             response_sentiment: {self._response_sentiment}\n
         """
 
@@ -65,8 +68,8 @@ class QueryMeta:
             "response_time":self._query_time,
             "response_source":self._response_sources,
             "response_toolset":", ".join(self._response_toolset),
-            "query_sentiment":self._query_sentiment,
-            "response_sentiment":self._response_sentiment,
+            "query_sentiment":self._query_sentiment, # -
+            "response_sentiment":self._response_sentiment, # -
             "response_model":self._response_model,
             "response_sources":", ".join(self._response_sources),
         }
@@ -94,6 +97,12 @@ class Record:
         self._meta = meta
         return self
 
+    def query_str(self):
+        return self._query
+
+    def answer_str(self):
+        return self._answer
+
     def __str__(self)->str:
         return f"""
             meta: {self._meta}
@@ -106,3 +115,10 @@ class Record:
             page_content=f"{self._answer}",
             metadata={**self._meta.as_meta(),"query":self._query},
         )
+
+    def as_dict(self)->dict:
+        return {
+            "metadata":self.get_meta(),
+            "query":self._query,
+            "answer":self._answer,
+        }

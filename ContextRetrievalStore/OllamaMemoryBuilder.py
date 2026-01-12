@@ -1,12 +1,9 @@
-import os
-import hashlib
-import json
 from pathlib import Path
-from typing import Any, Optional, Dict, List, Union
+from typing import Any, Optional, Dict
 from datetime import datetime
 from mem0 import Memory
 
-from OllamaMem.Memory import EnhancedMemory
+from ContextRetrievalStore.Memory import EnhancedMemory
 
 DEFAULT_PERSIST_DIR='./store/'
 NEO4j_URL = 'neo4j://127.0.0.1:7687'
@@ -35,7 +32,7 @@ class OllamaMemoryBuilder:
         self._distance_metric: str = "cosine"
         self._ollama_base_url: str = "http://localhost:11434/"
         self.mem_version: float = 0.1
-
+        self.use_cuda: bool = False
         # Optional: embedding dimensions (usually auto-detected)
         self._embedding_dims: Optional[int] = None
 
@@ -78,7 +75,7 @@ class OllamaMemoryBuilder:
         self._embedding_dims = dims
         return self
 
-    def re_ranking_model(self, model: str, top_k: int = 15):
+    def re_ranking_model(self, model: str, top_k: int = 15,use_cuda:bool=False):
         """
         Set the re-ranking model (optional - for future implementation).
         Note: Re-ranking is not currently supported by mem0 with Ollama.
@@ -90,6 +87,7 @@ class OllamaMemoryBuilder:
         self._re_ranking_model = model
         self._re_rank_top_k = top_k
         self._enable_reranking = True
+        self.use_cuda=use_cuda
         return self
 
     def max_tokens(self, tokens: int):
@@ -180,6 +178,10 @@ class OllamaMemoryBuilder:
             "modified": datetime.fromtimestamp(index_file.stat().st_mtime).isoformat()
         }
 
+    def set_version(self,version:int):
+        if version>self.mem_version:
+            self.mem_version = version
+
     # ==================== Build Methods ====================
 
     def build_config(self) -> Dict[str, Any]:
@@ -236,6 +238,21 @@ class OllamaMemoryBuilder:
                 }
             }
         }
+
+        if self._enable_reranking and self._re_ranking_model:
+            mem_conf["reranker"] =   {
+                        "provider": "llm_reranker",
+                        "config": {
+                            "llm": {
+                                "provider": "ollama",
+                                "config": {
+                                    "model": self._re_ranking_model,
+                                    "ollama_base_url": self._ollama_base_url
+                                }
+                            }
+                        }
+
+                }
 
         # Add version metadata
         mem_conf["version"] = f"v{self.mem_version}"
