@@ -1,8 +1,9 @@
 from ContextRetrievalStore import OllamaMemoryBuilder as OLM
 from Util.llm_util import get_embedding_dim_ollama
-OLLAMA_MODEL = 'rnj-1:latest'
-EMBEDDING_MODEL = 'qwen3-embedding:0.6b'
-RERANKING_MODEL = 'dengcao/Qwen3-Reranker-4B:Q8_0'
+from helper import (
+      EMBEDDING_MODEL,
+      OLLAMA_MODEL,
+)
 class Controller(object):
     def __init__(self):
         self.mem = (OLM.OllamaMemoryBuilder()
