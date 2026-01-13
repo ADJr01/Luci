@@ -3,6 +3,7 @@ from Util.llm_util import get_embedding_dim_ollama
 from helper import (
       EMBEDDING_MODEL,
       OLLAMA_MODEL,
+      CHAT_MODEl
 )
 class Controller(object):
     def __init__(self):
