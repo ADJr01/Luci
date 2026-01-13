@@ -1,9 +1,12 @@
-from Util.util import read_file
+from ContextRetrievalStore.Record import Record
 
 
 if __name__ == '__main__':
-    crs_instruction = read_file(r"D:\Projects\Personal\LLM\Luci\Instructions\crs_handle_instruction.txt")
-    print(crs_instruction)
+    record = Record()
+    meta = record.get_meta()
+    (meta.set_chat_id('2026_01_13_66srt')
+     .set_chat_index(12)
+     .set_response_model("gpt-oss:20b")).set_query_sentiment("")
 
 
 
