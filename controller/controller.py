@@ -1,11 +1,16 @@
 from ContextRetrievalStore import OllamaMemoryBuilder as OLM
 from Util.llm_util import get_embedding_dim_ollama
-from Util.util import read_file
-from helper import (
+from Util.util import (read_file,__std_out__)
+from config import (
       EMBEDDING_MODEL,
       OLLAMA_MODEL,
-      CHAT_MODEl
+      CHAT_MODEl,
+      MODE
 )
+def log(**args):
+      if MODE is not 'DEV':
+            print(__std_out__(**args))
+
 class Controller(object):
     def __init__(self):
           # LOAD Instruction for CHAT

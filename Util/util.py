@@ -1,6 +1,6 @@
-def log(**text)->str:
-    str = " ".join(text)
-    return str
+def __std_out__(**text)->str:
+    return " ".join(text)
+
 
 
 def read_file(path:str):
