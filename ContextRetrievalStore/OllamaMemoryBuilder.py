@@ -285,7 +285,7 @@ class OllamaMemoryBuilder:
             if persistence_exists:
                 info = self._get_persistence_info()
                 print(f"✓ Loading existing FAISS index from {self._persist_dir}")
-                print(f"  Size: {info['size_mb']:.2f} MB | Last modified: {info['modified']}")
+                print(f"✓ Size: {info['size_mb']:.2f} MB | Last modified: {info['modified']}")
             else:
                 print(f"✓ Creating new FAISS index at {self._persist_dir}")
 

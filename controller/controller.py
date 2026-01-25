@@ -13,7 +13,16 @@ def log(**args):
 
 class Controller(object):
     def __init__(self):
+          """
+          Initialize Luci Controller class.
+
+          Args:
+              mode: 'dev' or 'prod' if not prod then it will use dev as default mode.
+              storage_dir: Directory for persistence
+
+          """
           # LOAD Instruction for CHAT
           self.core_instruction = read_file(r"D:\Projects\Personal\LLM\Luci\Instructions\crs_handle_instruction.txt")
+
 
 
