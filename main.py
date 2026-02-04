@@ -1,8 +1,9 @@
-from ContextRetrievalStore.Record import Record
+from controller.controller import Controller
 
 
 if __name__ == '__main__':
-    record = Record()
+    controller = Controller('Dev','/')
+
 
 
 
