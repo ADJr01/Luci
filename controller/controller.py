@@ -7,9 +7,9 @@ from controller.config import (
       CHAT_MODEl,
       MODE
 )
-def log(**args):
+def log(*args):
       if MODE == 'DEV':
-            print(__std_out__(**args))
+            print(__std_out__(*args))
 
 class Controller(object):
     def __init__(self,mode:str,storage_dir:str):

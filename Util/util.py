@@ -1,4 +1,4 @@
-def __std_out__(**text)->str:
+def __std_out__(*text)->str:
     return " ".join(text)
 
 
