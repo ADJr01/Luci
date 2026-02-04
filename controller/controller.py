@@ -12,7 +12,7 @@ def log(**args):
             print(__std_out__(**args))
 
 class Controller(object):
-    def __init__(self):
+    def __init__(self,mode:str,storage_dir:str):
           """
           Initialize Luci Controller class.
 
@@ -21,8 +21,11 @@ class Controller(object):
               storage_dir: Directory for persistence
 
           """
+          MODE = mode
           # LOAD Instruction for CHAT
           self.core_instruction = read_file(r"D:\Projects\Personal\LLM\Luci\Instructions\crs_handle_instruction.txt")
+
+
 
 
 
