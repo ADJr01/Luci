@@ -8,7 +8,7 @@ from config import (
       MODE
 )
 def log(**args):
-      if MODE is 'DEV':
+      if MODE == 'DEV':
             print(__std_out__(**args))
 
 class Controller(object):
