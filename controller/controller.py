@@ -8,7 +8,7 @@ from controller.config import (
       MODE
 )
 def log(*args):
-      if MODE == 'DEV':
+      if MODE.lower() == 'dev':
             print(__std_out__(*args))
 
 class Controller(object):
@@ -17,7 +17,7 @@ class Controller(object):
           Initialize Luci Controller class.
 
           Args:
-              mode: 'dev' or 'prod' if not prod then it will use dev as default mode.
+              mode: 'dev' or 'prod' if nodt prod then it will use dev as default mode.
               storage_dir: Directory for persistence
 
           """
