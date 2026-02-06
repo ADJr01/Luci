@@ -17,7 +17,7 @@ class Controller(object):
           Initialize Luci Controller class.
 
           Args:
-              mode: 'dev' or 'prod' if nodt prod then it will use dev as default mode.
+              mode: 'dev' or 'prod' if not prod then it will use dev as default mode.
               storage_dir: Directory for persistence
 
           """
