@@ -9,7 +9,6 @@ from controller.config import (
 )
 def log(*args):
       if MODE.lower() == 'dev':
-
             print(__std_out__(*args))
 
 class Controller(object):
