@@ -19,8 +19,8 @@ class Controller(object):
           Args:
               mode: 'dev' or 'prod' if not prod then it will use dev as default mode.
               storage_dir: Directory for persistence
-
           """
+
           MODE = mode
           # LOAD Instruction for CHAT
           self.core_instruction = read_file(r"D:\Projects\Personal\LLM\Luci\Instructions\crs_handle_instruction.txt")
