@@ -2,7 +2,7 @@ from ContextRetrievalStore import OllamaMemoryBuilder as OLM
 from Util.llm_util import get_embedding_dim_ollama
 from Util.util import (read_file,__std_out__)
 import controller.config as config
-
+from CastOllama import CastOllama
 # global log function
 def log(*args):
       if config.MODE.lower() != 'dev':
