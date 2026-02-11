@@ -1,3 +1,4 @@
+from controller.controller import log
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                         CastOllama - v1.0.0                                 ║
@@ -37,7 +38,7 @@ Usage (Builder pattern):
 
     # Chat
     response = llm.chat("What is the weather in Dhaka?")
-    print(response)
+    log(response)
 """
 
 from __future__ import annotations
@@ -1074,13 +1075,13 @@ class CastOllama:
         Example:
             # Non-streaming
             resp = llm.chat("What is 2+2?")
-            print(resp.content)
+            log(resp.content)
 
             # Streaming
             llm.enable_streaming(True)
             for chunk in llm.chat("Tell me a story"):
                 if chunk.content:
-                    print(chunk.content, end="", flush=True)
+                    log(chunk.content, end="", flush=True)
         """
         use_stream = self._streaming if stream is None else stream
         use_think  = self._thinking  if think  is None else think
@@ -1695,7 +1696,7 @@ if __name__ == "__main__":
         .build()
     )
 
-    print(llm)
+    log(llm)
 
     # ── 2. Register a custom tool ────────────────────────────────────────────
     @llm.tool(description="Get the current temperature for a city")
@@ -1711,29 +1712,29 @@ if __name__ == "__main__":
 
     # ── 3. Simple Q&A ────────────────────────────────────────────────────────
     if llm.is_server_running():
-        print("\n─── Simple chat ───")
+        log("\n─── Simple chat ───")
         resp = llm.chat("What is the temperature in Dhaka?")
-        print(f"Content:  {resp.content}")
-        print(f"Thinking: {resp.thinking}")
+        log(f"Content:  {resp.content}")
+        log(f"Thinking: {resp.thinking}")
 
         # ── 4. Switch model on the fly ───────────────────────────────────────
         llm.switch_model("llama3.2")
-        print(f"\nSwitched to: {llm.get_model()}")
+        log(f"\nSwitched to: {llm.get_model()}")
 
         # ── 5. Streaming demo ────────────────────────────────────────────────
         llm.enable_streaming(True)
-        print("\n─── Streaming chat ───")
+        log("\n─── Streaming chat ───")
         for chunk in llm.chat("Write one sentence about Bangladesh."):
             if chunk.content:
-                print(chunk.content, end="", flush=True)
-        print()
+                log(chunk.content, end="", flush=True)
+        log()
 
         # ── 6. Server health ─────────────────────────────────────────────────
-        print("\n─── Server health ───")
-        print(json.dumps(llm.server_health(), indent=2))
+        log("\n─── Server health ───")
+        log(json.dumps(llm.server_health(), indent=2))
 
     else:
-        print(
+        log(
             "\n⚠  Ollama server not running.  "
             "Start it with: llm.start_server()"
         )
