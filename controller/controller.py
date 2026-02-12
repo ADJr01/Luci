@@ -25,7 +25,7 @@ class Controller(object):
           log(f"core_instruction loaded:\n ${self.core_instruction}")
 
 
-    def __load__OLLAMA_MODE(self):
+    def __load__OLLAMA_MODEL(self):
           pass
 
 
