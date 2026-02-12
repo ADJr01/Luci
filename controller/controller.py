@@ -21,12 +21,15 @@ class Controller(object):
           """
           config.MODE=mode
           # LOAD Instruction for CHAT
+          self.llm = None
           self.core_instruction = read_file(r"D:\Projects\Personal\LLM\Luci\Instructions\crs_handle_instruction.txt")
           log(f"core_instruction loaded:\n ${self.core_instruction}")
 
 
     def __load__OLLAMA_MODEL(self):
-          pass
+        self.llm = (
+            CastOllama.builder()
+        )
 
 
 
