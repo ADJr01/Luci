@@ -3,19 +3,19 @@ from __future__ import annotations
 from controller.controller import log
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                         CastOllama - v1.0.0                                 ║
-║          World-Class Ollama Model Management Framework for Python           ║
+║                         CastOllama - v1.0.0                                  ║
+║          World-Class Ollama Model Management Framework for Python            ║
 ║                                                                              ║
 ║  Features:                                                                   ║
-║    ✦ Singleton Pattern  — Only one instance per application                 ║
-║    ✦ Builder Pattern    — Fluent API for clean configuration                ║
+║    ✦ Singleton Pattern  — Only one instance per application                  ║
+║    ✦ Builder Pattern    — Fluent API for clean configuration                 ║
 ║    ✦ Request Queue      — Async queue to prevent server overload             ║
 ║    ✦ Tool Calling       — Register & dispatch custom tools automatically     ║
-║    ✦ Web Search         — Native Ollama web search with API key             ║
+║    ✦ Web Search         — Native Ollama web search with API key              ║
 ║    ✦ Streaming          — Token-by-token output with thinking support        ║
-║    ✦ Model Switching    — Hot-swap models at runtime                        ║
-║    ✦ Server Control     — Start / restart Ollama server on demand           ║
-║    ✦ Full Options API   — Temperature, context length, tokens, and more     ║
+║    ✦ Model Switching    — Hot-swap models at runtime                         ║
+║    ✦ Server Control     — Start / restart Ollama server on demand            ║
+║    ✦ Full Options API   — Temperature, context length, tokens, and more      ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
 Usage (Builder pattern):
