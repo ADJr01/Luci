@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from controller.controller import log
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -40,8 +42,6 @@ Usage (Builder pattern):
     response = llm.chat("What is the weather in Dhaka?")
     log(response)
 """
-
-from __future__ import annotations
 
 import asyncio
 import inspect
