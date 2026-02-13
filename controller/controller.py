@@ -29,6 +29,17 @@ class Controller(object):
     def __load__OLLAMA_MODEL(self):
         self.llm = (
             CastOllama.builder()
+            .set_model(config.OLLAMA_MODEl)
+            .set_host("http://localhost:11434")
+            .set_temperature(0.7)
+            .set_context_length(32768)
+            .set_max_tokens(1024)
+            .set_system_prompt("You are a helpful assistant.")
+            .enable_streaming(False)
+            .enable_thinking(False)
+            .enable_web_search(False)  # set api_key= for live search
+            .set_log_level("INFO")
+            .build()
         )
 
 
