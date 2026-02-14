@@ -24,7 +24,7 @@ class Controller(object):
           self.llm = None
           self.core_instruction = read_file(r"D:\Projects\Personal\LLM\Luci\Instructions\crs_handle_instruction.txt")
           log(f"core_instruction loaded:\n ${self.core_instruction}")
-          self.__load__OLLAMA_MODEL()
+          self.__load__OLLAMA_MODEL() #loaded ollama model
 
 
     def __load__OLLAMA_MODEL(self):
